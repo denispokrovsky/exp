@@ -71,7 +71,6 @@ def get_finbert_tone_sentiment(text):
 st.title("...ну-с... приступим")
 
 
-df['Translated'] = translate(df['Выдержки из текста'])
 
 
 
@@ -82,6 +81,8 @@ if uploaded_file:
     df = pd.read_excel(uploaded_file, sheet_name='Публикации')
     st.write("Data Preview", df.head())
 
+    df['Translated'] = translate(df['Выдержки из текста'])
+    
     # Placeholder for results
     vader_results = []
     finbert_results = []
