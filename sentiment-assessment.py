@@ -14,10 +14,17 @@ finbert_tone = pipeline("sentiment-analysis", model="yiyanghkust/finbert-tone")
 def get_vader_sentiment(text):
     return vader_analyzer.polarity_scores(text)["compound"]
 
-# Function for FinBERT sentiment analysis
+from transformers import AutoTokenizer
+
+# Load tokenizer along with the model
+finbert_tokenizer = AutoTokenizer.from_pretrained("ProsusAI/finbert")
+
 def get_finbert_sentiment(text):
-    result = finbert(text)[0]
+    # Tokenize and truncate the input text
+    inputs = finbert_tokenizer(text, truncation=True, max_length=512, return_tensors="pt")
+    result = finbert(**inputs)[0]
     return result['label']
+
 
 # Function for RoBERTa sentiment analysis
 def get_roberta_sentiment(text):
