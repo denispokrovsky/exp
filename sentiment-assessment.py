@@ -4,6 +4,8 @@ import time
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 from transformers import pipeline, MarianMTModel, MarianTokenizer
 import matplotlib.pyplot as plt
+import pymorphy2
+from nltk.tokenize import word_tokenize
 
 # Set up the sentiment analyzers
 vader_analyzer = SentimentIntensityAnalyzer()
@@ -11,77 +13,72 @@ finbert = pipeline("sentiment-analysis", model="ProsusAI/finbert")
 roberta = pipeline("sentiment-analysis", model="cardiffnlp/twitter-roberta-base-sentiment")
 finbert_tone = pipeline("sentiment-analysis", model="yiyanghkust/finbert-tone")
 
-# Define batch size for processing
-BATCH_SIZE = 100
-
-
-# Load translation model and tokenizer
+# Translation model for Russian to English
 model_name = "Helsinki-NLP/opus-mt-ru-en"
 translation_tokenizer = MarianTokenizer.from_pretrained(model_name)
 translation_model = MarianMTModel.from_pretrained(model_name)
 
+# Russian text preprocessing
+morph = pymorphy2.MorphAnalyzer()
+
+def preprocess_russian(text):
+    tokens = word_tokenize(text)
+    lemmatized = [morph.parse(word)[0].normal_form for word in tokens]
+    return ' '.join(lemmatized)
+
+# Function for translating Russian to English
 def translate(text):
-    # Tokenize and translate
     inputs = translation_tokenizer(text, return_tensors="pt", truncation=True)
     translated_tokens = translation_model.generate(**inputs)
     return translation_tokenizer.decode(translated_tokens[0], skip_special_tokens=True)
 
-
-# Function for VADER sentiment analysis with NaN handling and label mapping
+# Function for VADER sentiment analysis with label mapping
 def get_vader_sentiment(text):
-    if isinstance(text, str):
-        score = vader_analyzer.polarity_scores(translate(text))["compound"]
-        if score > 0.2:  # Adjusted positive threshold
-            return "Positive"
-        elif score < -0.2:  # Adjusted negative threshold
-            return "Negative"
-        else:
-            return "Neutral"
-    return None
+    score = vader_analyzer.polarity_scores(text)["compound"]
+    if score > 0.2:
+        return "Positive"
+    elif score < -0.2:
+        return "Negative"
+    return "Neutral"
 
-# Functions for FinBERT, RoBERTa, and FinBERT-Tone sentiment analysis with label mapping
+# Functions for FinBERT, RoBERTa, and FinBERT-Tone with label mapping
 def get_mapped_sentiment(result):
     label = result['label'].lower()
     if label in ["positive", "label_2", "pos", "pos_label"]:
         return "Positive"
     elif label in ["negative", "label_0", "neg", "neg_label"]:
         return "Negative"
-    else:
-        return "Neutral"
+    return "Neutral"
 
 def get_finbert_sentiment(text):
-    if isinstance(text, str):
-        result = finbert(text, truncation=True, max_length=512)[0]
-        return get_mapped_sentiment(result)
-    return None
+    result = finbert(text, truncation=True, max_length=512)[0]
+    return get_mapped_sentiment(result)
 
 def get_roberta_sentiment(text):
-    if isinstance(text, str):
-        result = roberta(text, truncation=True, max_length=512)[0]
-        return get_mapped_sentiment(result)
-    return None
+    result = roberta(text, truncation=True, max_length=512)[0]
+    return get_mapped_sentiment(result)
 
 def get_finbert_tone_sentiment(text):
-    if isinstance(text, str):
-        result = finbert_tone(text, truncation=True, max_length=512)[0]
-        return get_mapped_sentiment(result)
-    return None
+    result = finbert_tone(text, truncation=True, max_length=512)[0]
+    return get_mapped_sentiment(result)
 
 # Streamlit app setup
-st.title("...ну-с... приступим")
-
-
-
-
+st.title("... ну-с, приступим...")
 
 # File uploader
-uploaded_file = st.file_uploader("Upload an Excel file", type="xlsx")
+uploaded_file = st.file_uploader("Грузите!", type="xlsx")
 if uploaded_file:
     # Load data
     df = pd.read_excel(uploaded_file, sheet_name='Публикации')
-    st.write("Data Preview", df.head())
+    st.write("Предпросмотр: ", df.head())
 
-    df['Translated'] = translate(df['Выдержки из текста'])
+    # Preprocess and translate texts
+    translated_texts = []
+    for i, text in enumerate(df['Выдержки из текста']):
+        preprocessed_text = preprocess_russian(text)
+        translated_text = translate(preprocessed_text)
+        translated_texts.append(translated_text)
+        st.write(f"Translation Progress: {((i+1)/len(df))*100:.2f}%")
     
     # Placeholder for results
     vader_results = []
@@ -89,36 +86,32 @@ if uploaded_file:
     roberta_results = []
     finbert_tone_results = []
 
-    # Total number of items
-    total_items = len(df)
-
-    # Helper function for progress and time estimation
-    def process_with_progress_bar(func, name):
+    # Progress indicators
+    def process_with_progress_bar(func, name, texts):
         start_time = time.time()
         results = []
-        for i, text in enumerate(df['Translated']):
+        for i, text in enumerate(texts):
             result = func(text)
             results.append(result)
-            # Update progress bar and estimated time
+            # Progress calculation
             elapsed_time = time.time() - start_time
-            progress = (i + 1) / total_items
+            progress = (i + 1) / len(texts)
             remaining_time = elapsed_time / progress - elapsed_time
-            st.progress(progress)
             st.write(f"{name} Progress: {progress*100:.2f}% - Estimated remaining time: {remaining_time:.2f} seconds")
         return results
 
-    # Process each method with a progress bar and time estimate
+    # Process each method
     with st.spinner("Processing VADER..."):
-        vader_results = process_with_progress_bar(get_vader_sentiment, "VADER")
+        vader_results = process_with_progress_bar(get_vader_sentiment, "VADER", translated_texts)
 
     with st.spinner("Processing FinBERT..."):
-        finbert_results = process_with_progress_bar(get_finbert_sentiment, "FinBERT")
+        finbert_results = process_with_progress_bar(get_finbert_sentiment, "FinBERT", translated_texts)
 
     with st.spinner("Processing RoBERTa..."):
-        roberta_results = process_with_progress_bar(get_roberta_sentiment, "RoBERTa")
+        roberta_results = process_with_progress_bar(get_roberta_sentiment, "RoBERTa", translated_texts)
 
     with st.spinner("Processing FinBERT-Tone..."):
-        finbert_tone_results = process_with_progress_bar(get_finbert_tone_sentiment, "FinBERT-Tone")
+        finbert_tone_results = process_with_progress_bar(get_finbert_tone_sentiment, "FinBERT-Tone", translated_texts)
 
     # Add results to DataFrame
     df['VADER'] = vader_results
@@ -127,7 +120,7 @@ if uploaded_file:
     df['FinBERT-Tone'] = finbert_tone_results
 
     # Reorder columns
-    columns_order = ['Объект', 'VADER', 'FinBERT', 'RoBERTa', 'FinBERT-Tone', 'Выдержки из текста', 'Translated']
+    columns_order = ['Объект', 'VADER', 'FinBERT', 'RoBERTa', 'FinBERT-Tone', 'Выдержки из текста']
     df = df[columns_order]
     
     # Display results
