@@ -73,10 +73,11 @@ if uploaded_file:
     # Preprocess and translate texts
     translated_texts = []
     for i, text in enumerate(df['Выдержки из текста']):
-        lemmatized_text = lemmatize_text(text)
+        lemmatized_text = text #lemmatize_text(text)
         translated_text = translate(lemmatized_text)
         translated_texts.append(translated_text)
         st.write(f"Translation Progress: {((i+1)/len(df))*100:.2f}%")
+        st.write (translated_text)
 
     # Show first five translated texts
     df_translated = df.copy()
