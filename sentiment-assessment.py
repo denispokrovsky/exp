@@ -23,21 +23,19 @@ from transformers import AutoTokenizer
 # Load the tokenizer along with the model
 finbert_tokenizer = AutoTokenizer.from_pretrained("ProsusAI/finbert")
 
-# Update the get_finbert_sentiment function with truncation
+# Function for FinBERT sentiment analysis
 def get_finbert_sentiment(text):
-    if isinstance(text, str):  # Proceed only if text is a string
-        # Tokenize with truncation enabled
-        inputs = finbert_tokenizer(text, truncation=True, max_length=512, return_tensors="pt")
-        result = finbert(inputs['input_ids'])[0]
+    if isinstance(text, str):  # Ensure the input is a string
+        result = finbert(text, truncation=True, max_length=512)[0]  # Directly use the pipeline
         return result['label']
     else:
-        return None  # Handle non-string inputs ... NaN
+        return None  # Return None for non-string inputs
+
 
 # Function for RoBERTa sentiment analysis
 def get_roberta_sentiment(text):
     if isinstance(text, str):
-        inputs = roberta_tokenizer(text, truncation=True, max_length=512, return_tensors="pt")
-        result = roberta(inputs['input_ids'])[0]
+        result = roberta(text, truncation=True, max_length=512)[0]
         return result['label']
     else:
         return None
@@ -45,11 +43,11 @@ def get_roberta_sentiment(text):
 # Function for FinBERT-Tone sentiment analysis
 def get_finbert_tone_sentiment(text):
     if isinstance(text, str):
-        inputs = finbert_tone_tokenizer(text, truncation=True, max_length=512, return_tensors="pt")
-        result = finbert_tone(inputs['input_ids'])[0]
+        result = finbert_tone(text, truncation=True, max_length=512)[0]
         return result['label']
     else:
         return None
+
 
 
 # Streamlit app setup
