@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import time
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
-from transformers import pipeline
+from transformers import pipeline, MarianMTModel, MarianTokenizer
 import matplotlib.pyplot as plt
 
 # Set up the sentiment analyzers
@@ -14,10 +14,23 @@ finbert_tone = pipeline("sentiment-analysis", model="yiyanghkust/finbert-tone")
 # Define batch size for processing
 BATCH_SIZE = 100
 
+
+# Load translation model and tokenizer
+model_name = "Helsinki-NLP/opus-mt-ru-en"
+translation_tokenizer = MarianTokenizer.from_pretrained(model_name)
+translation_model = MarianMTModel.from_pretrained(model_name)
+
+def translate(text):
+    # Tokenize and translate
+    inputs = translation_tokenizer(text, return_tensors="pt", truncation=True)
+    translated_tokens = translation_model.generate(**inputs)
+    return translation_tokenizer.decode(translated_tokens[0], skip_special_tokens=True)
+
+
 # Function for VADER sentiment analysis with NaN handling and label mapping
 def get_vader_sentiment(text):
     if isinstance(text, str):
-        score = vader_analyzer.polarity_scores(text)["compound"]
+        score = vader_analyzer.polarity_scores(translate(text))["compound"]
         if score > 0.2:  # Adjusted positive threshold
             return "Positive"
         elif score < -0.2:  # Adjusted negative threshold
@@ -38,19 +51,19 @@ def get_mapped_sentiment(result):
 
 def get_finbert_sentiment(text):
     if isinstance(text, str):
-        result = finbert(text, truncation=True, max_length=512)[0]
+        result = finbert(translate(text), truncation=True, max_length=512)[0]
         return get_mapped_sentiment(result)
     return None
 
 def get_roberta_sentiment(text):
     if isinstance(text, str):
-        result = roberta(text, truncation=True, max_length=512)[0]
+        result = roberta(translate(text), truncation=True, max_length=512)[0]
         return get_mapped_sentiment(result)
     return None
 
 def get_finbert_tone_sentiment(text):
     if isinstance(text, str):
-        result = finbert_tone(text, truncation=True, max_length=512)[0]
+        result = finbert_tone(translate(text), truncation=True, max_length=512)[0]
         return get_mapped_sentiment(result)
     return None
 
