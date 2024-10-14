@@ -10,9 +10,13 @@ finbert = pipeline("sentiment-analysis", model="ProsusAI/finbert")
 roberta = pipeline("sentiment-analysis", model="cardiffnlp/twitter-roberta-base-sentiment")
 finbert_tone = pipeline("sentiment-analysis", model="yiyanghkust/finbert-tone")
 
-# Function for VADER sentiment analysis
+# Function for VADER sentiment analysis with NaN handling
 def get_vader_sentiment(text):
-    return vader_analyzer.polarity_scores(text)["compound"]
+    if isinstance(text, str):  # Proceed only if text is a string
+        return vader_analyzer.polarity_scores(text)["compound"]
+    else:
+        return None  # Or you can return 0, or "N/A" as a placeholder
+
 
 from transformers import AutoTokenizer
 
