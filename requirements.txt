@@ -8,3 +8,4 @@ matplotlib
 sentencepiece
 sacremoses
 pymorphy2
+nltk
