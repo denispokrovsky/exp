@@ -6,6 +6,4 @@ transformers
 torch
 matplotlib
 sentencepiece
-sacremoses
-pymorphy2
-nltk
+pymystem3
