@@ -20,27 +20,37 @@ def get_vader_sentiment(text):
 
 from transformers import AutoTokenizer
 
-# Load tokenizer along with the model
+# Load the tokenizer along with the model
 finbert_tokenizer = AutoTokenizer.from_pretrained("ProsusAI/finbert")
 
-# Function for FinBERT sentiment analysis with proper pipeline usage
+# Update the get_finbert_sentiment function with truncation
 def get_finbert_sentiment(text):
-    inputs = finbert_tokenizer(text, truncation=True, max_length=512, return_tensors="pt")
-    # Pass the inputs dictionary to the model pipeline without unpacking it
-    result = finbert(text)[0]
-    return result['label']
+    if isinstance(text, str):  # Proceed only if text is a string
+        # Tokenize with truncation enabled
+        inputs = finbert_tokenizer(text, truncation=True, max_length=512, return_tensors="pt")
+        result = finbert(inputs['input_ids'])[0]
+        return result['label']
+    else:
+        return None  # Handle non-string inputs such as NaN
 
-# For RoBERTa
+# Function for RoBERTa sentiment analysis
 def get_roberta_sentiment(text):
-    inputs = roberta_tokenizer(text, truncation=True, max_length=512, return_tensors="pt")
-    result = roberta(text)[0]
-    return result['label']
+    if isinstance(text, str):
+        inputs = roberta_tokenizer(text, truncation=True, max_length=512, return_tensors="pt")
+        result = roberta(inputs['input_ids'])[0]
+        return result['label']
+    else:
+        return None
 
-# For FinBERT-Tone
+# Function for FinBERT-Tone sentiment analysis
 def get_finbert_tone_sentiment(text):
-    inputs = finbert_tone_tokenizer(text, truncation=True, max_length=512, return_tensors="pt")
-    result = finbert_tone(text)[0]
-    return result['label']
+    if isinstance(text, str):
+        inputs = finbert_tone_tokenizer(text, truncation=True, max_length=512, return_tensors="pt")
+        result = finbert_tone(inputs['input_ids'])[0]
+        return result['label']
+    else:
+        return None
+
 
 # Streamlit app setup
 st.title("... плюс несколько подходов")
