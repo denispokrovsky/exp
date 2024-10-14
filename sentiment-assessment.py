@@ -1,9 +1,9 @@
 import streamlit as st
 import pandas as pd
+import time
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 from transformers import pipeline
 import matplotlib.pyplot as plt
-import numpy as np
 
 # Set up the sentiment analyzers
 vader_analyzer = SentimentIntensityAnalyzer()
@@ -18,9 +18,9 @@ BATCH_SIZE = 100
 def get_vader_sentiment(text):
     if isinstance(text, str):
         score = vader_analyzer.polarity_scores(text)["compound"]
-        if score >= 0.05:
+        if score > 0.2:  # Adjusted positive threshold
             return "Positive"
-        elif score <= -0.05:
+        elif score < -0.2:  # Adjusted negative threshold
             return "Negative"
         else:
             return "Neutral"
@@ -28,10 +28,10 @@ def get_vader_sentiment(text):
 
 # Functions for FinBERT, RoBERTa, and FinBERT-Tone sentiment analysis with label mapping
 def get_mapped_sentiment(result):
-    label = result['label']
-    if label in ["POSITIVE", "LABEL_2"]:
+    label = result['label'].lower()
+    if label in ["positive", "label_2", "pos", "pos_label"]:
         return "Positive"
-    elif label in ["NEGATIVE", "LABEL_0"]:
+    elif label in ["negative", "label_0", "neg", "neg_label"]:
         return "Negative"
     else:
         return "Neutral"
@@ -55,19 +55,14 @@ def get_finbert_tone_sentiment(text):
     return None
 
 # Streamlit app setup
-st.title("... плюс несколько методов ...")
+st.title("Financial News Sentiment Analysis")
 
 # File uploader
-uploaded_file = st.file_uploader("Загружаем и выгружаем", type="xlsx")
+uploaded_file = st.file_uploader("Upload an Excel file", type="xlsx")
 if uploaded_file:
     # Load data
     df = pd.read_excel(uploaded_file, sheet_name='Публикации')
-    st.write("Предпросмотр загруженного", df.head())
-
-    # Initialize progress bars
-    overall_progress = st.progress(0)
-    total_steps = len(df)
-    current_step = 0
+    st.write("Data Preview", df.head())
 
     # Placeholder for results
     vader_results = []
@@ -75,41 +70,36 @@ if uploaded_file:
     roberta_results = []
     finbert_tone_results = []
 
-    # Process data in batches
-    for start in range(0, len(df), BATCH_SIZE):
-        batch = df.iloc[start:start + BATCH_SIZE]
+    # Total number of items
+    total_items = len(df)
 
-        # Process VADER with individual progress bar
-        with st.spinner("Processing VADER..."):
-            vader_progress = st.progress(0)
-            batch_vader = batch['Выдержки из текста'].apply(get_vader_sentiment)
-            vader_results.extend(batch_vader)
-            vader_progress.progress(1.0)
+    # Helper function for progress and time estimation
+    def process_with_progress_bar(func, name):
+        start_time = time.time()
+        results = []
+        for i, text in enumerate(df['Выдержки из текста']):
+            result = func(text)
+            results.append(result)
+            # Update progress bar and estimated time
+            elapsed_time = time.time() - start_time
+            progress = (i + 1) / total_items
+            remaining_time = elapsed_time / progress - elapsed_time
+            st.progress(progress)
+            st.write(f"{name} Progress: {progress*100:.2f}% - Estimated remaining time: {remaining_time:.2f} seconds")
+        return results
 
-        # Process FinBERT with individual progress bar
-        with st.spinner("Processing FinBERT..."):
-            finbert_progress = st.progress(0)
-            batch_finbert = batch['Выдержки из текста'].apply(get_finbert_sentiment)
-            finbert_results.extend(batch_finbert)
-            finbert_progress.progress(1.0)
+    # Process each method with a progress bar and time estimate
+    with st.spinner("Processing VADER..."):
+        vader_results = process_with_progress_bar(get_vader_sentiment, "VADER")
 
-        # Process RoBERTa with individual progress bar
-        with st.spinner("Processing RoBERTa..."):
-            roberta_progress = st.progress(0)
-            batch_roberta = batch['Выдержки из текста'].apply(get_roberta_sentiment)
-            roberta_results.extend(batch_roberta)
-            roberta_progress.progress(1.0)
+    with st.spinner("Processing FinBERT..."):
+        finbert_results = process_with_progress_bar(get_finbert_sentiment, "FinBERT")
 
-        # Process FinBERT-Tone with individual progress bar
-        with st.spinner("Processing FinBERT-Tone..."):
-            finbert_tone_progress = st.progress(0)
-            batch_finbert_tone = batch['Выдержки из текста'].apply(get_finbert_tone_sentiment)
-            finbert_tone_results.extend(batch_finbert_tone)
-            finbert_tone_progress.progress(1.0)
+    with st.spinner("Processing RoBERTa..."):
+        roberta_results = process_with_progress_bar(get_roberta_sentiment, "RoBERTa")
 
-        # Update overall progress bar
-        current_step += len(batch)
-        overall_progress.progress(min(current_step / total_steps, 1.0))
+    with st.spinner("Processing FinBERT-Tone..."):
+        finbert_tone_results = process_with_progress_bar(get_finbert_tone_sentiment, "FinBERT-Tone")
 
     # Add results to DataFrame
     df['VADER'] = vader_results
