@@ -53,7 +53,7 @@ def get_finbert_tone_sentiment(text):
 
 
 # Streamlit app setup
-st.title("... плюс несколько подходов")
+st.title("... плюс несколько подходов ...")
 
 # File uploader
 uploaded_file = st.file_uploader("Upload an Excel file", type="xlsx")
