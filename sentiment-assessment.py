@@ -51,24 +51,29 @@ def get_mapped_sentiment(result):
 
 def get_finbert_sentiment(text):
     if isinstance(text, str):
-        result = finbert(translate(text), truncation=True, max_length=512)[0]
+        result = finbert(text, truncation=True, max_length=512)[0]
         return get_mapped_sentiment(result)
     return None
 
 def get_roberta_sentiment(text):
     if isinstance(text, str):
-        result = roberta(translate(text), truncation=True, max_length=512)[0]
+        result = roberta(text, truncation=True, max_length=512)[0]
         return get_mapped_sentiment(result)
     return None
 
 def get_finbert_tone_sentiment(text):
     if isinstance(text, str):
-        result = finbert_tone(translate(text), truncation=True, max_length=512)[0]
+        result = finbert_tone(text, truncation=True, max_length=512)[0]
         return get_mapped_sentiment(result)
     return None
 
 # Streamlit app setup
-st.title("Financial News Sentiment Analysis")
+st.title("...ну-с... приступим")
+
+
+df['Translated'] = translate(df['Выдержки из текста'])
+
+
 
 # File uploader
 uploaded_file = st.file_uploader("Upload an Excel file", type="xlsx")
@@ -90,7 +95,7 @@ if uploaded_file:
     def process_with_progress_bar(func, name):
         start_time = time.time()
         results = []
-        for i, text in enumerate(df['Выдержки из текста']):
+        for i, text in enumerate(df['Translated']):
             result = func(text)
             results.append(result)
             # Update progress bar and estimated time
@@ -121,7 +126,7 @@ if uploaded_file:
     df['FinBERT-Tone'] = finbert_tone_results
 
     # Reorder columns
-    columns_order = ['Объект', 'VADER', 'FinBERT', 'RoBERTa', 'FinBERT-Tone', 'Выдержки из текста']
+    columns_order = ['Объект', 'VADER', 'FinBERT', 'RoBERTa', 'FinBERT-Tone', 'Выдержки из текста', 'Translated']
     df = df[columns_order]
     
     # Display results
