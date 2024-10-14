@@ -78,17 +78,13 @@ if uploaded_file:
     with st.spinner("Processing FinBERT..."):
         finbert_results = process_with_progress_bar(get_finbert_sentiment, "FinBERT", translated_texts)
 
-    with st.spinner("Processing RoBERTa..."):
-        roberta_results = process_with_progress_bar(get_roberta_sentiment, "RoBERTa", translated_texts)
 
-    with st.spinner("Processing FinBERT-Tone..."):
-        finbert_tone_results = process_with_progress_bar(get_finbert_tone_sentiment, "FinBERT-Tone", translated_texts)
 
     # Add results to DataFrame
     df['VADER'] = vader_results
     df['FinBERT'] = finbert_results
-    df['RoBERTa'] = roberta_results
-    df['FinBERT-Tone'] = finbert_tone_results
+    df['RoBERTa'] = finbert_results
+    df['FinBERT-Tone'] = finbert_results
 
     # Reorder columns
     columns_order = ['Объект', 'VADER', 'FinBERT', 'RoBERTa', 'FinBERT-Tone', 'Выдержки из текста']
