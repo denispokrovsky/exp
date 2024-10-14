@@ -31,7 +31,7 @@ def get_finbert_sentiment(text):
         result = finbert(inputs['input_ids'])[0]
         return result['label']
     else:
-        return None  # Handle non-string inputs such as NaN
+        return None  # Handle non-string inputs ... NaN
 
 # Function for RoBERTa sentiment analysis
 def get_roberta_sentiment(text):
