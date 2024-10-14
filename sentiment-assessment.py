@@ -31,7 +31,35 @@ def translate(text):
     translated_tokens = translation_model.generate(**inputs)
     return translation_tokenizer.decode(translated_tokens[0], skip_special_tokens=True)
 
-# Define functions for each model as before...
+# Function for VADER sentiment analysis with label mapping
+def get_vader_sentiment(text):
+    score = vader_analyzer.polarity_scores(text)["compound"]
+    if score > 0.2:
+        return "Positive"
+    elif score < -0.2:
+        return "Negative"
+    return "Neutral"
+
+# Functions for FinBERT, RoBERTa, and FinBERT-Tone with label mapping
+def get_mapped_sentiment(result):
+    label = result['label'].lower()
+    if label in ["positive", "label_2", "pos", "pos_label"]:
+        return "Positive"
+    elif label in ["negative", "label_0", "neg", "neg_label"]:
+        return "Negative"
+    return "Neutral"
+
+def get_finbert_sentiment(text):
+    result = finbert(text, truncation=True, max_length=512)[0]
+    return get_mapped_sentiment(result)
+
+def get_roberta_sentiment(text):
+    result = roberta(text, truncation=True, max_length=512)[0]
+    return get_mapped_sentiment(result)
+
+def get_finbert_tone_sentiment(text):
+    result = finbert_tone(text, truncation=True, max_length=512)[0]
+    return get_mapped_sentiment(result)
 
 # Streamlit app setup
 st.title("... ну-с, приступим...")
