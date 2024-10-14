@@ -23,20 +23,22 @@ from transformers import AutoTokenizer
 # Load tokenizer along with the model
 finbert_tokenizer = AutoTokenizer.from_pretrained("ProsusAI/finbert")
 
+# Function for FinBERT sentiment analysis with proper pipeline usage
 def get_finbert_sentiment(text):
-    # Tokenize and truncate the input text
     inputs = finbert_tokenizer(text, truncation=True, max_length=512, return_tensors="pt")
-    result = finbert(**inputs)[0]
+    # Pass the inputs dictionary to the model pipeline without unpacking it
+    result = finbert(text)[0]
     return result['label']
 
-
-# Function for RoBERTa sentiment analysis
+# For RoBERTa
 def get_roberta_sentiment(text):
+    inputs = roberta_tokenizer(text, truncation=True, max_length=512, return_tensors="pt")
     result = roberta(text)[0]
     return result['label']
 
-# Function for FinBERT-Tone sentiment analysis
+# For FinBERT-Tone
 def get_finbert_tone_sentiment(text):
+    inputs = finbert_tone_tokenizer(text, truncation=True, max_length=512, return_tensors="pt")
     result = finbert_tone(text)[0]
     return result['label']
 
