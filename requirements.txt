@@ -5,3 +5,4 @@ vaderSentiment
 transformers
 torch
 matplotlib
+sentencepiece
