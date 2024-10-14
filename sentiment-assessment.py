@@ -30,7 +30,7 @@ def get_finbert_tone_sentiment(text):
     return result['label']
 
 # Streamlit app setup
-st.title("Financial News Sentiment Analysis")
+st.title("+ несколько подходов)
 
 # File uploader
 uploaded_file = st.file_uploader("Upload an Excel file", type="xlsx")
