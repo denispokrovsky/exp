@@ -7,3 +7,4 @@ torch
 matplotlib
 sentencepiece
 sacremoses
+pymorphy2
